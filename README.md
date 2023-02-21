@@ -9,8 +9,8 @@ BE-dataHIVE is a mySQL base editing database for practicioners and computer scie
 ## Included Studies
 | Title                                                                                                                                 | Authors          | Journal                | Year |
 |---------------------------------------------------------------------------------------------------------------------------------------|------------------|------------------------|------|
-| [Determinants of Base Editing Outcomes   from Target Library Analysis and Machine Learning](https://www.sciencedirect.com/science/article/pii/S0092867420306322)                                             | Arbab et al.     | Cell                   | 2020 |
-| Optimization of C-to-G base editors with   sequence context preference predictable by machine learning methods                        | Yuan et al.      | Nature Communications  | 2021 |
-| Predicting base editing outcomes using   position-specific sequence determinants                                                      | Pallaseni et al. | Nucleic Acids Research | 2021 |
-| Predicting base editing outcomes with an   attentionbased deep learning algorithm trained on high-throughput target   library screens | Marquart et al.  | Nature Communications  | 2021 |
-| Sequence-specific prediction of the   efficiencies of adenine and cytosine base editors                                               | Song et al.      | Nature Biotechnology   | 2020 |
+| [Determinants of Base Editing Outcomes from Target Library Analysis and Machine Learning](https://www.sciencedirect.com/science/article/pii/S0092867420306322)                                             | Arbab et al.     | Cell                   | 2020 |
+| [Optimization of C-to-G base editors with sequence context preference predictable by machine learning methods](https://www.nature.com/articles/s41467-021-25217-y)                        | Yuan et al.      | Nature Communications  | 2021 |
+| [Predicting base editing outcomes using position-specific sequence determinants](https://academic.oup.com/nar/article/50/6/3551/6548303?login=false)                                                     | Pallaseni et al. | Nucleic Acids Research | 2021 |
+| [Predicting base editing outcomes with an attention-based deep learning algorithm trained on high-throughput target library screens](https://www.nature.com/articles/s41467-021-25375-z) | Marquart et al.  | Nature Communications  | 2021 |
+| [Sequence-specific prediction of the efficiencies of adenine and cytosine base editors](https://www.nature.com/articles/s41587-020-0573-5)                                               | Song et al.      | Nature Biotechnology   | 2020 |
