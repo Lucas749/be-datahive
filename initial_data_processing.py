@@ -1,5 +1,5 @@
 """
-Data processing code for BE-dataHIVE: a MySQL Base Editing Database for Practitioners and Computer Scientists
+Data processing code for BE-dataHIVE: a Base Editing Database
 Author: Lucas Schneider (lucas.schneider@cs.ox.ac.uk)
 Studies:
     Marquart
@@ -50,6 +50,13 @@ Folder Structure:
         |__ merge_data_files                - merge all author data files into one file
         |__ get_study_data_stats            - calculate stats for individual studies
         |__ get_data_stats                  - calculate stats for the final data file
+    encodings.py                    - contains all functions used to encode base editing data
+        |__ one_hot_encode_seq              - returns one-hot encoding for DNA sequence
+        |__ one_hot_encode_dataframe        - encodes data in selected columns via one-hot encoding
+        |__ hindex_to_xy                    - returns the x and y coordinates in a 2D space corresponding to the given index, as per the Hilbert curve ordering
+        |__ write_pixel_list_hilbert        - returns a list of points in the 2D space according to the Hilbert curve ordering
+        |__ make_image                      - generate 32x32 image mapping
+        |__ hilbert_curve_encode_dataframe  - encodes data in selected columns via hilbert curve encoding
 """
 #Import packages
 import pandas as pd

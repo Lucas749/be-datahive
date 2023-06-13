@@ -1,5 +1,5 @@
 """
-Data processing code for BE-dataHIVE: a MySQL Base Editing Database for Practitioners and Computer Scientists
+Data processing code for BE-dataHIVE: a Base Editing Database
 Author: Lucas Schneider (lucas.schneider@cs.ox.ac.uk)
 Studies:
     Marquart
@@ -50,13 +50,22 @@ Folder Structure:
         |__ merge_data_files                - merge all author data files into one file
         |__ get_study_data_stats            - calculate stats for individual studies
         |__ get_data_stats                  - calculate stats for the final data file
+    encodings.py                    - contains all functions used to encode base editing data
+        |__ one_hot_encode_seq              - returns one-hot encoding for DNA sequence
+        |__ one_hot_encode_dataframe        - encodes data in selected columns via one-hot encoding
+        |__ hindex_to_xy                    - returns the x and y coordinates in a 2D space corresponding to the given index, as per the Hilbert curve ordering
+        |__ write_pixel_list_hilbert        - returns a list of points in the 2D space according to the Hilbert curve ordering
+        |__ make_image                      - generate 32x32 image mapping
+        |__ hilbert_curve_encode_dataframe  - encodes data in selected columns via hilbert curve encoding
 """
 #Import packages
 import os
+import pandas as pd
 
 #Import own functions
 from initial_data_processing import parse_marquart_data, parse_pallaseni_data, parse_song_data, parse_yuan_data, process_arbab_data, flatten_arbab_data
 from data_enrichment import run_cas_offinder,add_cas_offinder_results,match_location_via_biopython,get_encode_data,run_RNA_fold,unpack_RNA_fold_output,run_CRISPR_spec,calculate_melting_temperatures,harmonize_data_padding,add_pam_col_grna_seq_mismatch,add_crispr_spec_energies,add_screen_data,add_RNAfold_energy,add_melting_temperature,merge_data_files,get_study_data_stats, get_data_stats
+from encodings import one_hot_encode_dataframe, hilbert_curve_encode_dataframe
 
 #######################################################
 # Run Initial Data Processing
@@ -322,3 +331,30 @@ stats_fields = [{'field':'location','type':'count'},
 {'field':['ctcf_zscore','H3K27ac_zscore','H3K4me3_zscore'],'type':'count_any'},
 ]
 get_data_stats(file_name, stats_fields, processed_data_path, savings_path, group_by = 'base_editor')
+
+
+#######################################################
+# Run Encodings
+#######################################################
+############
+#Encodings
+############
+processed_data_path = r"<SAVING_DATA_PATH>"
+savings_path = processed_data_path + '\\merged'
+
+file_name = 'data_vF.csv'
+processed_data_path = fr"{data_path}\merged"
+file_path = processed_data_path +"\\" + file_name
+bystander = pd.read_csv(file_path)
+
+#One-hot
+cols_to_encode = ['grna', 'pam_sequence', 'sequence','full_context_sequence', 'full_context_sequence_padded']
+bystander = one_hot_encode_dataframe(bystander, cols_to_encode)
+
+#Hilbert
+cols_to_encode = ['grna', 'pam_sequence', 'sequence','full_context_sequence', 'full_context_sequence_padded']
+bystander = hilbert_curve_encode_dataframe(bystander, cols_to_encode)
+
+#Save dataframe
+os.chdir(savings_path)
+bystander.to_csv(file_name)
