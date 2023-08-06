@@ -541,9 +541,12 @@ def process_arbab_data(file_name, editing_window_start, editing_window_end, num_
                     df.loc[ind, f"Position_{pos_index} {nt_pos}"] = fraction_edited[outcomes.iloc[:, k].values == nt_pos].sum(
                     ) * scaling_factor
 
+                #Add nt_pos == nt
+                df.loc[ind, f"Position_{pos_index} {nt}"] = 1 - fraction_edited[outcomes.iloc[:, k].values != nt].sum() * scaling_factor
+                
                 # Add view editing percentage at position
                 df_pos_edits.loc[ind,
-                                f"Position_{pos_index}"] = fraction_edited[outcomes.iloc[:, k].values != nt].sum()
+                                f"Position_{pos_index}"] = fraction_edited[outcomes.iloc[:, k].values != nt].sum() * scaling_factor
 
             editing_window_efficiency = fraction_edited[np.any(outcomes.iloc[:, edit_window_pos_start:edit_window_pos_end].values != list(
                 or_seq[edit_window_pos_start:edit_window_pos_end]), axis=1)].sum()
@@ -599,6 +602,7 @@ def process_arbab_data(file_name, editing_window_start, editing_window_end, num_
                                                                         'edited_count_eff'].values
  
     # Add repeating data to dfs
+    df['efficiency_full_grna'] = np.NaN
     df_pos_edits.loc[:, ['original_id', 'grna', 'sequence', 'full_context_sequence', 'protospace_position', 'pam_index', 'genomic_context', 'genomic_context_build', 'cell', 'base_editor', 'total_count', 'edited_count', 'efficiency_full_grna', 'scaling_factor_edited_count_denominator', f'editing_windows_{editing_window_start}_{editing_window_end}_efficiency_calculated_calculated', 'efficiency_data_total_count', 'efficiency_data_edited_count', 'efficiency_data_efficiency_full_grna', 'efficiency_full_grna_reported', 'total_count_reported_efficiency', 'edited_count_reported_efficiency','total_count_reported_efficiency', 'edited_count_reported_efficiency']] = df.loc[:, [
         'original_id', 'grna', 'sequence', 'full_context_sequence', 'protospace_position', 'pam_index', 'genomic_context', 'genomic_context_build', 'cell', 'base_editor', 'total_count', 'edited_count', 'efficiency_full_grna', 'scaling_factor_edited_count_denominator', f'editing_windows_{editing_window_start}_{editing_window_end}_efficiency_calculated', 'efficiency_data_total_count', 'efficiency_data_edited_count', 'efficiency_data_efficiency_full_grna', 'efficiency_full_grna_reported', 'total_count_reported_efficiency', 'edited_count_reported_efficiency','total_count_reported_efficiency', 'edited_count_reported_efficiency']]
 
@@ -641,17 +645,20 @@ def parse_pallaseni_data(file_name, abe_efficiency_file_name, cbe_efficiency_fil
 
     # Generate position column names for position outcome edits
     pos_columns = [f"Position_{i}" for i in range(-num_positions_before_protospacer, num_positions+1)]
+    columns_edits = columns + pos_columns
+    df_edits = pd.DataFrame(columns=columns_edits)
+    
     pos_columns = [[f"{i} A", f"{i} T", f"{i} C", f"{i} G"] for i in pos_columns]
     pos_columns = [x for xs in pos_columns for x in xs]
-    columns = columns + pos_columns
+    columns_pos = columns + pos_columns
     
     #Create empty data frame
-    df = pd.DataFrame(columns=columns)
+    df = pd.DataFrame(columns=columns_pos)
 
     #Fixed editors according to study
     K562_editors = ['BE4-1', 'FNLS', 'ABERA']
 
-    # Loop through data_by index and obtain oligo id
+    #Loop through data_by index and obtain oligo id
     pos_cols = [c for c in data_by.columns if c.startswith('W')]
     for i, ind in enumerate(data_by.index):
         print(f"Unpacking {i} / {len(data_by)}")
@@ -673,10 +680,16 @@ def parse_pallaseni_data(file_name, abe_efficiency_file_name, cbe_efficiency_fil
             temp = temp_data.iloc[j*12:(j+1)*12]
             temp = temp.loc[(temp.values != 0)]
 
+            cum_freq = 0
             for temp_ind in temp.index:
+                nt_from = temp_ind.split('->')[0][-1]
                 nt_to = temp_ind[-1]
                 freq = temp.loc[temp_ind]
                 df.loc[i, f'Position_{j+1} {nt_to}'] = freq
+
+                cum_freq += freq
+            df.loc[i, f'Position_{j+1} {nt_from}'] = 1 - cum_freq
+            df_edits.loc[i, f'Position_{j+1}'] = cum_freq
 
         # Get right cell
         if base_editor in K562_editors:
@@ -707,9 +720,13 @@ def parse_pallaseni_data(file_name, abe_efficiency_file_name, cbe_efficiency_fil
         df.loc[save_ind, 'total_count_reported_efficiency'] = total_count
         df.loc[save_ind, 'total_count_reported_calculated'] = total_count
 
+    cols_assign = [c for c in df.columns if not c.startswith('Position')]
+    df_edits.loc[:,cols_assign] = df.loc[:,cols_assign]
+    
     #Save data
     os.chdir(saving_path + file_path_ext)
     df.to_csv('bystander_outcome_per_position.csv')
+    df_edits.to_csv('bystander_edit_per_position.csv')
 
 #######################################################
 # Yuan
@@ -760,7 +777,7 @@ def parse_yuan_data(file_name, num_positions, columns, file_path, oligo_data_pat
         pam_index = oligo_data.loc[oligo, 'PAM Index']
         sequence = target[pam_index - 20:][:20]
         protospace_position = pam_index - 20
-        editing_pos = data_by.loc[ind, 'Position']
+        editing_pos = data_by.loc[ind, 'Position'] - 1
         nt_to = data_by.loc[ind, 'Nucleotide']
         freq = data_by.loc[ind, 'Efficinecy']
         
@@ -781,9 +798,24 @@ def parse_yuan_data(file_name, num_positions, columns, file_path, oligo_data_pat
         df.loc[save_ind, 'cell'] = cell
         df.loc[save_ind, 'base_editor'] = base_editor
 
+    columns_edit = [c for c in df.columns if not c.startswith('Position')]
+    df_edits = df.loc[:,columns_edit]
+    
+    base_types = ['A','C','G','T']
+    for ind in df.index:  
+        target = df.loc[ind, 'sequence']
+
+        for i in range(len(target)):
+
+            rel_bases = [b for b in base_types if b != target[i]]
+            pos_names = [f"Position_{i} {b}" for b in rel_bases]
+            edit_freq = df.loc[ind,pos_names].sum()
+            df_edits.loc[ind,f"Position_{i}"] = edit_freq            
+
     #Save data
     os.chdir(saving_path + file_path_ext)
     df.to_csv('bystander_outcome_per_position.csv')
+    df_edits.to_csv('bystander_edit_per_position.csv')
 
 #######################################################
 # Song
@@ -808,7 +840,7 @@ def parse_song_data(file_name, editing_window_start, editing_window_end, num_pos
     os.chdir(file_path + file_path_ext)
 
     #Read data
-    data_by = pd.read_excel(file_name, sheet_name='Merged')
+    data_by = pd.read_excel(file_name, sheet_name='merged')
     
     #Assign unique index
     data_by.index = data_by.loc[:, "target sequence (total 30 bps = 4 bp neighboring sequence + 20 bp protospacer + 3 bp NGG PAM+ 3 bp neighboring sequence)"] + \
